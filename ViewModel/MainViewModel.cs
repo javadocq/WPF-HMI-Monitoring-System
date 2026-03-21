@@ -5,13 +5,17 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Windows.Input;
+using System.Windows.Threading;
 using WPF_MES_Monitoring_System.Model;
 using WPF_MES_Monitoring_System.ViewModel.Command;
+using WPF_MES_Monitoring_System.ViewModel.Service;
 
 namespace WPF_MES_Monitoring_System.ViewModel
 {
     internal class MainViewModel : INotifyPropertyChanged
     {
+        private DispatcherTimer timer;
+
         // UI에 바인딩 될 로그 컬렉션(즉시 반영)
         private ObservableCollection<MachineLog> logs;
 
@@ -28,43 +32,17 @@ namespace WPF_MES_Monitoring_System.ViewModel
         // 버튼 클릭 시 동작할 Command
         public RelayCommand AddLogCommand { get; }
 
-        // 시뮬레이션 데이터
-        private string[] machines = { "CNC-01", "PRESS-02", "ROBOT-03", "PACK-04"};
-        private Random random = new Random();
+        
 
         public MainViewModel()
         {
             Logs = new ObservableCollection<MachineLog>();
-            AddLogCommand = new RelayCommand(GenerateRandomLog);
-
+            timer = new DispatcherTimer();
+            timer.Interval = TimeSpan.FromSeconds(2); // 2초마다 실행
+            timer.Tick += Timer_Tick; // 생성 로그를 timer.Tick 이벤트에 연결
+            timer.Start();
             // 초기 데이터 로드
             LoadDataFromDb();
-        }
-
-        // 랜덤 로그 생성
-        private void GenerateRandomLog()
-        {
-            var newLog = new MachineLog
-            {
-                Timestamp = DateTime.Now,
-                MachineName = machines[random.Next(machines.Length)],
-                Temperature = random.Next(20, 100),
-                Status = random.Next(10) > 8 ? "ERROR" : "RUN",
-                LogMessage = "Simulated log message"
-            };
-
-            using(var conn = new SQLite.SQLiteConnection(App.databasePath))
-            {
-                conn.CreateTable<MachineLog>();
-                conn.Insert(newLog);
-            }
-
-            Logs.Insert(0, newLog);
-
-            OnPropertyChanged(nameof(TotalCount));
-            OnPropertyChanged(nameof(RunningCount));
-            OnPropertyChanged(nameof(ErrorCount));
-
         }
 
         public int TotalCount => Logs.GroupBy(x => x.MachineName) // 머신별로 그룹화
@@ -90,6 +68,20 @@ namespace WPF_MES_Monitoring_System.ViewModel
                 var logList = conn.Table<MachineLog>().OrderByDescending(l => l.Timestamp).ToList();
                 Logs = new ObservableCollection<MachineLog>(logList);
             }
+        }
+
+        private MachineService machineService = new MachineService();
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
+            var newLog = machineService.GenerateRandomLog();
+
+            machineService.SaveLog(newLog);
+
+            Logs.Insert(0, newLog);
+            OnPropertyChanged(nameof(TotalCount));
+            OnPropertyChanged(nameof(RunningCount));
+            OnPropertyChanged(nameof(ErrorCount));
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
