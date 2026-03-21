@@ -1,11 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using LiveCharts;
+using LiveCharts.Wpf;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Windows.Media;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Windows.Data;
-using System.Windows.Input;
 using System.Windows.Threading;
 using WPF_MES_Monitoring_System.Model;
 using WPF_MES_Monitoring_System.ViewModel.Command;
@@ -15,7 +14,9 @@ namespace WPF_MES_Monitoring_System.ViewModel
 {
     internal class MainViewModel : INotifyPropertyChanged
     {
-        private DispatcherTimer timer;
+        // 불량률 데이터를 담을 시리즈
+        public SeriesCollection DefectRateSeries { get; set; }
+
         private string selectedMachine = "전체";
         private ICollectionView logView;
         public ICollectionView LogView
@@ -26,7 +27,12 @@ namespace WPF_MES_Monitoring_System.ViewModel
         public string SelectedMachine
         {
             get { return selectedMachine; }
-            set { selectedMachine = value; OnPropertyChanged(); ApplyFilter(); }
+            set { 
+                selectedMachine = value; 
+                OnPropertyChanged(); 
+                ApplyFilter(); 
+                UpdateChartData();
+            }
         }
 
 
@@ -47,7 +53,7 @@ namespace WPF_MES_Monitoring_System.ViewModel
         public RelayCommand AddLogCommand { get; }
 
 
-
+        private DispatcherTimer timer;
         public MainViewModel()
         {
             Logs = new ObservableCollection<MachineLog>();
@@ -61,6 +67,47 @@ namespace WPF_MES_Monitoring_System.ViewModel
             timer.Start();
             // 초기 데이터 로드
             LoadDataFromDb();
+
+            // 불량률 차트 초기화
+            DefectRateSeries = new SeriesCollection
+            {
+                new LineSeries
+                {
+                    Title = "불량률 (%)",
+                    Values = new ChartValues<double>(),
+                    PointGeometry = DefaultGeometries.Circle,
+                    Stroke = Brushes.Crimson,
+                    Fill = Brushes.Transparent,
+                }
+            };
+
+            UpdateChartData();
+        }
+
+        private void UpdateChartData()
+        {
+            var targetList = SelectedMachine == "전체"
+                ? Logs.Take(20).ToList()
+                : Logs.Where(log => log.MachineName == SelectedMachine).Take(20).ToList();
+
+            UpdateDefectRate(targetList);
+        }
+
+        private void UpdateDefectRate(List<MachineLog> logList)
+        {
+            if (logList.Count == 0)
+            {
+                return;
+            }
+            double defectCount = logList.Count(log => log.Status == "ERROR");
+            double totalCount = logList.Count;
+            double defectRate = (defectCount / totalCount) * 100;
+
+            // 차트 값 (최근 10개만 업데이트)
+            if (DefectRateSeries[0].Values.Count > 10)
+                DefectRateSeries[0].Values.RemoveAt(0);
+
+            DefectRateSeries[0].Values.Add(defectRate);
         }
 
         public int TotalCount => Logs.GroupBy(x => x.MachineName) // 머신별로 그룹화
@@ -107,6 +154,7 @@ namespace WPF_MES_Monitoring_System.ViewModel
             OnPropertyChanged(nameof(TotalCount));
             OnPropertyChanged(nameof(RunningCount));
             OnPropertyChanged(nameof(ErrorCount));
+            UpdateChartData();
         }
 
         private void ApplyFilter()

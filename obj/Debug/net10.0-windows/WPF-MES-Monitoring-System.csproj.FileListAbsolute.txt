@@ -50,3 +50,5 @@ C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\obj\Debug\net10.0-windows\re
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\obj\Debug\net10.0-windows\View\MachineView.g.cs
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\obj\Debug\net10.0-windows\GeneratedInternalTypeHelper.g.cs
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\obj\Debug\net10.0-windows\View\MachineView.baml
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\LiveCharts.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\LiveCharts.Wpf.dll
