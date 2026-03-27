@@ -28,13 +28,13 @@ namespace WPF_MES_Monitoring_System.ViewModel
             get => _cnc01Press;
             set { _cnc01Press = value; OnPropertyChanged(); }
         }
-        private string _cnc01Status = "OFFLINE";
+        private string _cnc01Status = STATUS_OFF;
         public string Cnc01_Status
         {
             get => _cnc01Status;
             set { _cnc01Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(Cnc01_StatusColor)); }
         }
-        public Brush Cnc01_StatusColor => Cnc01_Status == "ONLINE" ? Brushes.LimeGreen : Brushes.Crimson;
+        public Brush Cnc01_StatusColor => Cnc01_Status == STATUS_ON ? Brushes.LimeGreen : Brushes.Crimson;
         public Brush Cnc01_TempColor => Cnc01_Temp >= 400 ? Brushes.Crimson : Cnc01_Temp >= 350 ? Brushes.Orange : Brushes.Black;
 
 
@@ -51,13 +51,13 @@ namespace WPF_MES_Monitoring_System.ViewModel
             get => _press02Press;
             set { _press02Press = value; OnPropertyChanged(); }
         }
-        private string _press02Status = "OFFLINE";
+        private string _press02Status = STATUS_OFF;
         public string Press02_Status
         {
             get => _press02Status;
             set { _press02Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(Press02_StatusColor)); }
         }
-        public Brush Press02_StatusColor => Press02_Status == "ONLINE" ? Brushes.LimeGreen : Brushes.Crimson;
+        public Brush Press02_StatusColor => Press02_Status == STATUS_ON ? Brushes.LimeGreen : Brushes.Crimson;
         public Brush Press02_TempColor => Press02_Temp >= 400 ? Brushes.Crimson : Press02_Temp >= 350 ? Brushes.Orange : Brushes.Black;
 
 
@@ -74,13 +74,13 @@ namespace WPF_MES_Monitoring_System.ViewModel
             get => _robot03Press;
             set { _robot03Press = value; OnPropertyChanged(); }
         }
-        private string _robot03Status = "OFFLINE";
+        private string _robot03Status = STATUS_OFF;
         public string Robot03_Status
         {
             get => _robot03Status;
             set { _robot03Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(Robot03_StatusColor)); }
         }
-        public Brush Robot03_StatusColor => Robot03_Status == "ONLINE" ? Brushes.LimeGreen : Brushes.Crimson;
+        public Brush Robot03_StatusColor => Robot03_Status == STATUS_ON ? Brushes.LimeGreen : Brushes.Crimson;
         public Brush Robot03_TempColor => Robot03_Temp >= 400 ? Brushes.Crimson : Robot03_Temp >= 350 ? Brushes.Orange : Brushes.Black;
 
 
@@ -97,13 +97,13 @@ namespace WPF_MES_Monitoring_System.ViewModel
             get => _pack04Press;
             set { _pack04Press = value; OnPropertyChanged(); }
         }
-        private string _pack04Status = "OFFLINE";
+        private string _pack04Status = STATUS_OFF;
         public string Pack04_Status
         {
             get => _pack04Status;
             set { _pack04Status = value; OnPropertyChanged(); OnPropertyChanged(nameof(Pack04_StatusColor)); }
         }
-        public Brush Pack04_StatusColor => Pack04_Status == "ONLINE" ? Brushes.LimeGreen : Brushes.Crimson;
+        public Brush Pack04_StatusColor => Pack04_Status == STATUS_ON ? Brushes.LimeGreen : Brushes.Crimson;
         public Brush Pack04_TempColor => Pack04_Temp >= 400 ? Brushes.Crimson : Pack04_Temp >= 350 ? Brushes.Orange : Brushes.Black;
 
 
@@ -184,54 +184,45 @@ namespace WPF_MES_Monitoring_System.ViewModel
 
         }
 
+        // --- 각 기계별 실시간 차트 데이터 (4세트) ---
+        public SeriesCollection Cnc01_Series { get; set; }
+        public SeriesCollection Press02_Series { get; set; }
+        public SeriesCollection Robot03_Series { get; set; }
+        public SeriesCollection Pack04_Series { get; set; }
+
         private void InitializeChart()
         {
-            // 불량률 차트 초기화
             DefectRateSeries = new SeriesCollection
             {
-                new LineSeries { Title = "CNC-01", Values = new ChartValues<ObservableValue>(), Stroke = Brushes.OrangeRed, Fill = Brushes.Transparent },
-                new LineSeries { Title = "PRESS-02", Values = new ChartValues<ObservableValue>(), Stroke = Brushes.DodgerBlue, Fill = Brushes.Transparent },
-                new LineSeries { Title = "ROBOT-03", Values = new ChartValues<ObservableValue>(), Stroke = Brushes.Green, Fill = Brushes.Transparent },
-                new LineSeries { Title = "PACK-04", Values = new ChartValues<ObservableValue>(), Stroke = Brushes.Purple, Fill = Brushes.Transparent }
+                new LineSeries { Title = "상세 추세", Values = new ChartValues<ObservableValue>(), Stroke = Brushes.Crimson }
             };
+
+            // 불량률 차트 초기화
+            Cnc01_Series = CreateMiniSeries(Brushes.OrangeRed);
+            Press02_Series = CreateMiniSeries(Brushes.DodgerBlue);
+            Robot03_Series = CreateMiniSeries(Brushes.LimeGreen);
+            Pack04_Series = CreateMiniSeries(Brushes.MediumPurple);
             UpdateChartData();
+        }
+
+        private SeriesCollection CreateMiniSeries(Brush color)
+        {
+            return new SeriesCollection
+                {
+                    new LineSeries
+                    {
+                        Values = new ChartValues<ObservableValue>(),
+                        Stroke = color,
+                        Fill = Brushes.Transparent,
+                        PointGeometry = null,
+                        StrokeThickness = 2
+                    }
+                };
         }
 
         private void UpdateChartData()
         {
-            var targetList = SelectedMachine == ALL_MACHINES
-                ? Logs.Take(20).ToList()
-                : Logs.Where(log => log.MachineName == SelectedMachine).Take(20).ToList();
-
-            var currentData = Logs.GroupBy(l => l.MachineName)
-                                  .Select(g => g.First())
-                                  .ToList();
-
-            foreach(var log in currentData)
-            {
-                // 기계 이름에 맞는 시리즈 인덱스 찾기
-                int seriesIndex = log.MachineName switch
-                {
-                    "CNC-01" => 0,
-                    "PRESS-02" => 1,
-                    "ROBOT-03" => 2,
-                    "PACK-04" => 3,
-                    _ => -1
-                };
-
-                if(seriesIndex != -1)
-                {
-                    var targetSeries = DefectRateSeries[seriesIndex].Values;
-
-                    if(targetSeries.Count >= 20)
-                    {
-                        targetSeries.RemoveAt(0);
-                    }
-                    targetSeries.Add(new ObservableValue(log.Temperature));
-                }
-            }
-
-            UpdateTemperate(targetList);
+            //
         }
 
         private void SetupTimer()
@@ -343,28 +334,42 @@ namespace WPF_MES_Monitoring_System.ViewModel
 
         private void UpdateMachineProperties(MachineLog log)
         {
+            SeriesCollection? targetSeries = null;
+
             switch (log.MachineName)
             {
                 case "CNC-01":
                     Cnc01_Temp = log.Temperature;
                     Cnc01_Press = log.Pressure;
                     Cnc01_Status = log.Status;
+                    targetSeries = Cnc01_Series;
                     break;
                 case "PRESS-02":
                     Press02_Temp = log.Temperature;
                     Press02_Press = log.Pressure;
                     Press02_Status = log.Status;
+                    targetSeries = Press02_Series;
                     break;
                 case "ROBOT-03":
                     Robot03_Temp = log.Temperature;
                     Robot03_Press = log.Pressure;
                     Robot03_Status = log.Status;
+                    targetSeries = Robot03_Series;
                     break;
                 case "PACK-04":
                     Pack04_Temp = log.Temperature;
                     Pack04_Press = log.Pressure;
                     Pack04_Status = log.Status;
+                    targetSeries = Pack04_Series;
                     break;
+            }
+
+            // targetSeries가 null이 아니고, 기계가 온라인일 때만 차트 그리기.
+            if (targetSeries != null && targetSeries.Count > 0 && log.Status == STATUS_ON)
+            {
+                var values = targetSeries[0].Values;
+                if (values.Count >= 15) values.RemoveAt(0);
+                values.Add(new ObservableValue(log.Temperature));
             }
         }
 
