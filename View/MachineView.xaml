@@ -6,12 +6,17 @@
         xmlns:local="clr-namespace:WPF_MES_Monitoring_System.View"
         xmlns:vm="clr-namespace:WPF_MES_Monitoring_System.ViewModel"
         xmlns:lvc="clr-namespace:LiveCharts.Wpf;assembly=LiveCharts.Wpf"
+        xmlns:conv="clr-namespace:WPF_MES_Monitoring_System.ViewModel.ValueConverter"
         mc:Ignorable="d"
         Title="Smart Factory Real-time Monitoring" Height="800" Width="1200" Background="#F0F2F5">
 
     <Window.DataContext>
         <vm:MainViewModel />
     </Window.DataContext>
+
+    <Window.Resources>
+        <conv:LatencyToColorConverter x:Key="LatencyToColorConverter"/>
+    </Window.Resources>
 
     <Grid Margin="15">
         <Grid.RowDefinitions>
@@ -197,6 +202,19 @@
                             <DataGridTextColumn Header="시간" Binding="{Binding Timestamp, StringFormat='HH:mm:ss'}" Width="80"/>
                             <DataGridTextColumn Header="설비명" Binding="{Binding MachineName}" Width="100"/>
                             <DataGridTextColumn Header="상태" Binding="{Binding Status}" Width="80"/>
+                            <DataGridTextColumn Header="응답속도" Binding="{Binding ResponseTime, StringFormat={}{0}ms}" Width="80">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding ResponseTime, Converter={StaticResource LatencyToColorConverter}}" Value="Slow">
+                                                <Setter Property="Foreground" Value="Red"/>
+                                                <Setter Property="FontWeight" Value="Bold"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
                             <DataGridTextColumn Header="온도" Binding="{Binding Temperature}" Width="60"/>
                             <DataGridTextColumn Header="압력" Binding="{Binding Pressure}" Width="60"/>
                             <DataGridTextColumn Header="메시지" Binding="{Binding LogMessage}" Width="*"/>

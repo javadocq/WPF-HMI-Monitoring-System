@@ -1,9 +1,6 @@
 ﻿using Modbus.Device;
-using System;
-using System.Collections.Generic;
 using System.Net.Sockets;
-using System.Reflection.PortableExecutable;
-using System.Text;
+using System.Diagnostics;
 using WPF_MES_Monitoring_System.Model;
 
 namespace WPF_MES_Monitoring_System.ViewModel.Service
@@ -13,6 +10,9 @@ namespace WPF_MES_Monitoring_System.ViewModel.Service
         // 가상 서버에 연결
         public async Task<MachineLog> GetRealTimeLogAysnc(string machineName, int port)
         {
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start(); // 측정 시작
+
             try
             {
                 using (var client = new TcpClient())
@@ -27,6 +27,8 @@ namespace WPF_MES_Monitoring_System.ViewModel.Service
                         ushort[] registers = await Task.Run(() => master.ReadHoldingRegisters(1, 0, 2)); // 온도와 압력 데이터를 읽어온다고 가정
                         bool[] coils = await Task.Run(() => master.ReadCoils(1, 0, 1)); // 장비 상태를 읽어온다고 가정
 
+                        stopwatch.Stop();
+
                         return new MachineLog
                         {
                             Timestamp = DateTime.Now,
@@ -34,9 +36,11 @@ namespace WPF_MES_Monitoring_System.ViewModel.Service
                             Temperature = registers[0],
                             Pressure = registers[1],
                             Status = coils[0] ? "ONLINE" : "OFFLINE",
-                            LogMessage = coils[0] ? "Machine is operating normally." : "Machine is offline."
+                            LogMessage = coils[0] ? "Machine is operating normally." : "Machine is offline.",
+                            ResponseTime = stopwatch.ElapsedMilliseconds
                         };
                     }
+                    stopwatch.Stop();
                     throw new Exception("연결은 되었으나 응답이 없습니다.");
                 }
             } catch(Exception ex)

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Diagnostics;
 using WPF_MES_Monitoring_System.Model;
 using WPF_MES_Monitoring_System.ViewModel.Command;
 using WPF_MES_Monitoring_System.ViewModel.Service;
@@ -239,6 +240,14 @@ namespace WPF_MES_Monitoring_System.ViewModel
 
         private void UpdateUtilizationRates()
         {
+
+            bool isAnyDataReceived = !string.IsNullOrEmpty(Cnc01_Status) ||
+                             !string.IsNullOrEmpty(Press02_Status) ||
+                             !string.IsNullOrEmpty(Robot03_Status) ||
+                             !string.IsNullOrEmpty(Pack04_Status);
+
+            if (!isAnyDataReceived) return;
+
             _totalTickCount++;
 
             if (Cnc01_Status == STATUS_ON) _cnc01OnlineTick++;
