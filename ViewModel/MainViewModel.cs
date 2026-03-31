@@ -314,9 +314,13 @@ namespace WPF_MES_Monitoring_System.ViewModel
 
         private MachineService machineService = new MachineService();
 
-        private async void Timer_Tick(object? sender, EventArgs e)
-        {
+        // 장비별 마지막 재시도 시간을 저장
+        private Dictionary<string, DateTime> _lastRetryTime = new Dictionary<string, DateTime>();
 
+        private Dictionary<string, bool> _isMachineBusy = new Dictionary<string, bool>();
+
+        private void Timer_Tick(object? sender, EventArgs e)
+        {
             var machineConfigs = new[]
             {
                 (Name: "CNC-01", Port: 502),
@@ -324,47 +328,63 @@ namespace WPF_MES_Monitoring_System.ViewModel
                 (Name: "ROBOT-03", Port: 504),
                 (Name: "PACK-04", Port: 505)
             };
-
             foreach (var config in machineConfigs)
             {
-                // _ = 는 '던져놓고 잊기(Fire and Forget)' 방식입니다.
-                _ = ProcessMachineLogAsync(config.Name, config.Port);
+                // 1. 현재 통신 중인지 체크 (아까 만든 딕셔너리)
+                if (_isMachineBusy.TryGetValue(config.Name, out bool busy) && busy) continue;
+
+                // 2. 오프라인 상태라면 '쿨타임' 체크 (예: 5초)
+                if (IsMachineOffline(config.Name)) // 현재 상태가 OFFLINE인지 확인하는 로직
+                {
+                    if (_lastRetryTime.TryGetValue(config.Name, out var lastTime))
+                    {
+                        if ((DateTime.Now - lastTime).TotalSeconds < 5) continue; // 5초 안 지났으면 패스!
+                    }
+                }
+
+                // 3. 통신 시도 전 시간 기록
+                _lastRetryTime[config.Name] = DateTime.Now;
+                _ = ProcessSingleMachineAsync(config.Name, config.Port);
             }
         }
 
-        private async Task ProcessMachineLogAsync(string name, int port)
+        private async Task ProcessSingleMachineAsync(string name, int port)
         {
+            _isMachineBusy[name] = true; // "나 지금 일하러 간다!" 표시
             try
             {
-                // 1. 비동기 통신 (개별적으로 실행됨)
                 var newLog = await machineService.GetRealTimeLogAysnc(name, port);
 
-                // 2. DB 저장 (백그라운드에서 실행)
-                if (newLog.Status == STATUS_ON)
-                {
-                    machineService.SaveLog(newLog);
-                }
-
-                // 3. UI 업데이트 (Dispatcher를 통해 순차적으로 처리)
+                // UI 업데이트는 오는 즉시 실행 (Dispatcher 활용)
                 App.Current.Dispatcher.Invoke(() =>
                 {
-                    // 로그 리스트 추가 및 100개 제한
                     Logs.Insert(0, newLog);
                     if (Logs.Count > 100) Logs.RemoveAt(100);
-
-                    // 카드 UI 프로퍼티 업데이트
                     UpdateMachineProperties(newLog);
 
-                    // 가동률 및 상태 요약 갱신
+                    // 가동률 등은 데이터가 하나 올 때마다 갱신하거나, 필요시 호출
                     UpdateUtilizationRates();
-                    UpdateAllStatus();
                 });
+
+                if (newLog.Status == STATUS_ON)
+                    machineService.SaveLog(newLog);
             }
-            catch (Exception ex)
+            finally
             {
-                // 예외 처리 로직 (로그 기록 등)
-                Debug.WriteLine($"Error processing {name}: {ex.Message}");
+                _isMachineBusy[name] = false; // "나 다 했어, 다음 타이머 때 불러줘!"
             }
+        }
+
+        private bool IsMachineOffline(string machineName)
+        {
+            return machineName switch
+            {
+                "CNC-01" => Cnc01_Status == STATUS_OFF,
+                "PRESS-02" => Press02_Status == STATUS_OFF,
+                "ROBOT-03" => Robot03_Status == STATUS_OFF,
+                "PACK-04" => Pack04_Status == STATUS_OFF,
+                _ => false
+            };
         }
 
         private void UpdateMachineProperties(MachineLog log)
