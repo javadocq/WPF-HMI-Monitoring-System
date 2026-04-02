@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection.PortableExecutable;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -149,8 +150,9 @@ namespace WPF_MES_Monitoring_System.ViewModel
 
         // 버튼 클릭 시 동작할 Command
         public RelayCommand AddLogCommand { get; }
-        public ActionCommand<string> StartCommand { get; }
-        public ActionCommand<string> StopCommand { get; }
+        public RelayCommand StartCommand { get; }
+        public RelayCommand StopCommand { get; }
+        public RelayCommand SaveExcel { get; }
 
 
 
@@ -167,16 +169,33 @@ namespace WPF_MES_Monitoring_System.ViewModel
             LoadDataFromDb();
             UpdateAllStatus(); // 초기 카운트 계산
 
-            StartCommand = new ActionCommand<string>(async (port) => {
-                await machineService.ControlMachineAsync(int.Parse(port), true);
+            StartCommand = new RelayCommand(async (port) => {
+                await machineService.ControlMachineAsync(int.Parse(port.ToString()), true);
                 // 버튼 누르자마자 UI 즉시 갱신 (사용자 체감 성능 향상)
-                UpdateStatusImmediately(port, STATUS_ON);
+                UpdateStatusImmediately(port.ToString(), STATUS_ON);
             });
 
-            StopCommand = new ActionCommand<string>(async (port) => {
-                await machineService.ControlMachineAsync(int.Parse(port), false);
-                UpdateStatusImmediately(port, STATUS_OFF);
+            StopCommand = new RelayCommand(async (port) => {
+                await machineService.ControlMachineAsync(int.Parse(port.ToString()), false);
+                UpdateStatusImmediately(port.ToString(), STATUS_OFF);
             });
+            SaveExcel = new RelayCommand(OnSaveExcel);
+        }
+
+        SaveExcelService _saveExcelService = new SaveExcelService();
+        private void OnSaveExcel()
+        {
+
+            var filteredData = Logs.Where(log => log.Timestamp.Date == DateTime.Today).ToList();
+
+            if (filteredData.Count > 0)
+            {
+                _saveExcelService.GenerateExcel(filteredData);
+            }
+            else
+            {
+                MessageBox.Show("오늘 저장된 로그가 없습니다!");
+            }
         }
 
         private void UpdateStatusImmediately(string port, string status)
@@ -382,8 +401,7 @@ namespace WPF_MES_Monitoring_System.ViewModel
                     UpdateUtilizationRates();
                 });
 
-                if (newLog.Status == STATUS_ON)
-                    machineService.SaveLog(newLog);
+                machineService.SaveLog(newLog);
             }
             finally
             {

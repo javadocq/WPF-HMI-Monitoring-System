@@ -72,3 +72,10 @@ C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\ru
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\runtimes\osx-x64\native\libSystem.IO.Ports.Native.dylib
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\runtimes\unix\lib\net10.0\System.IO.Ports.dll
 C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\runtimes\win\lib\net10.0\System.IO.Ports.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\ClosedXML.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\ClosedXML.Parser.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\DocumentFormat.OpenXml.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\DocumentFormat.OpenXml.Framework.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\ExcelNumberFormat.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\RBush.dll
+C:\Users\User\Desktop\wpf\WPF-MES-Monitoring-System\bin\Debug\net10.0-windows\SixLabors.Fonts.dll

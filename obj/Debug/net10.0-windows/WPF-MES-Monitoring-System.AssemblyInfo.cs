@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WPF-MES-Monitoring-System")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9bdd0a6fe2aa9feffb1352fceb95ff996443b2b7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a103505a22af8b4021b4985110cf6a9aa49848da")]
 [assembly: System.Reflection.AssemblyProductAttribute("WPF-MES-Monitoring-System")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WPF-MES-Monitoring-System")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

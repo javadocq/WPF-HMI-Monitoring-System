@@ -1,30 +1,32 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Windows.Input;
 
 namespace WPF_MES_Monitoring_System.ViewModel.Command
 {
-    internal class RelayCommand : ICommand
+    public class RelayCommand : ICommand
     {
-        public event EventHandler? CanExecuteChanged;
+        private readonly Action<object?> _execute;
+        private readonly Predicate<object?>? _canExecute;
 
-        // 생성자에서 실행할 액션을 받아 저장
-        private readonly Action _execute;
-
-        public RelayCommand(Action execute)
+        // 1. 매개변수가 있는 경우를 위한 생성자
+        public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
         {
-            _execute = execute;
+            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+            _canExecute = canExecute;
         }
 
-        public bool CanExecute(object? parameter)
-        {
-            return true; // 항상 실행 가능하도록 설정 (필요에 따라 조건 추가 가능)
-        }
+        // 2. 매개변수가 없는 경우(Action)를 위한 생성자 (오버로딩)
+        // 넘겨받은 Action을 Action<object?> 형태로 감싸서 저장합니다.
+        public RelayCommand(Action execute) : this(_ => execute()) { }
 
-        public void Execute(object? parameter)
+        public bool CanExecute(object? parameter) => _canExecute?.Invoke(parameter) ?? true;
+
+        public void Execute(object? parameter) => _execute(parameter);
+
+        public event EventHandler? CanExecuteChanged
         {
-            _execute();
+            add => CommandManager.RequerySuggested += value;
+            remove => CommandManager.RequerySuggested -= value;
         }
     }
 }
